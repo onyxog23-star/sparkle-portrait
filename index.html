@@ -144,6 +144,15 @@ footer a { color: var(--sky); }
     </div>
 
     <div class="field">
+      <span class="label">Style</span>
+      <div class="seg" role="radiogroup" aria-label="Style">
+        <input type="radio" name="style" id="style-photo" value="photo" checked><label for="style-photo">Photo<small>true colours</small></label>
+        <input type="radio" name="style" id="style-lines" value="lines"><label for="style-lines">Lines<small>pastel outline art</small></label>
+      </div>
+    </div>
+
+    <div id="lineFields" style="display:flex;flex-direction:column;gap:inherit">
+    <div class="field">
       <label class="label" for="detail">Line detail <output id="thr">Level 5</output></label>
       <input type="range" id="detail" min="1" max="10" step="1" value="6">
     </div>
@@ -151,6 +160,7 @@ footer a { color: var(--sky); }
     <div class="field">
       <label class="label" for="tone">Photo glow <output id="toneOut">35%</output></label>
       <input type="range" id="tone" min="0" max="100" step="5" value="35">
+    </div>
     </div>
 
     <div class="row">
@@ -204,6 +214,7 @@ footer a { color: var(--sky); }
   function status(msg, live = false) { const s = $('status'); s.textContent = msg; s.classList.toggle('live', live); }
 
   function showThr() { $('thr').textContent = `Level ${$('detail').value}`; }
+  function styleName() { const r = document.querySelector('input[name=style]:checked'); return r ? r.value : 'photo'; }
   function toneAmt() { return +$('tone').value / 100; }
   function showTone() { $('toneOut').textContent = `${$('tone').value}%`; }
 
@@ -317,6 +328,7 @@ footer a { color: var(--sky); }
 
     const ox = Math.floor((W - nw) / 2), oy = Math.floor((H - TA - nh) / 2 + 10 * K);
 
+    const photoMode = styleName() === 'photo' && !isDemo;
     const res = canny(g, nw, nh, +$('detail').value), edges = res.edges;
     // soft pastel glow of the photo, shown faintly behind the lines
     const tone = document.createElement('canvas');
@@ -344,16 +356,30 @@ footer a { color: var(--sky); }
 
 
     const pts = [], m = 3;
-    for (let y = m; y < nh - m; y++) for (let x = m; x < nw - m; x++) { const i = y * nw + x; if (edges[i]) pts.push(i); }
+    let step = 1;
+    if (photoMode) {
+      // every part of the photo becomes a sparkle in its real colour
+      step = Math.max(2, Math.sqrt(nw * nh / 42000));
+      for (let y = 0; y < nh; y += step) for (let x = 0; x < nw; x += step) {
+        const xx = Math.min(nw - 1, Math.round(x + Math.random() * step * 0.5));
+        const yy = Math.min(nh - 1, Math.round(y + Math.random() * step * 0.5));
+        pts.push(yy * nw + xx);
+      }
+    } else {
+      for (let y = m; y < nh - m; y++) for (let x = m; x < nw - m; x++) { const i = y * nw + x; if (edges[i]) pts.push(i); }
+    }
 
-    const max = Math.min(26000, Math.round(16000 * K));
+    const max = photoMode ? pts.length : Math.min(26000, Math.round(16000 * K));
     for (let i = 0; i < Math.min(max, pts.length); i++) {      // partial shuffle = random sample
       const j = i + Math.floor(Math.random() * (pts.length - i));
       [pts[i], pts[j]] = [pts[j], pts[i]];
     }
     const n = Math.min(max, pts.length);
+    const photoCv = document.createElement('canvas');
+    photoCv.width = W; photoCv.height = H;
+    photoCv.getContext('2d').drawImage(off, ox, oy);
     const S = {
-      tone,
+      tone, photoMode, photoCv, cs: photoMode ? new Array(n) : null,
       n, tx: new Float32Array(n), ty: new Float32Array(n), sx: new Float32Array(n), sy: new Float32Array(n),
       px: new Float32Array(n), py: new Float32Array(n), curve: new Float32Array(n),
       t0: new Float32Array(n), dur: new Float32Array(n), col: new Uint8Array(n), size: new Float32Array(n),
@@ -372,6 +398,11 @@ footer a { color: var(--sky); }
       S.dur[k] = 0.8 + Math.random() * 0.8;
       S.col[k] = Math.floor(Math.random() * COLORS.length);
       S.size[k] = (Math.random() < 0.7 ? 0.7 : 1.1) * K;
+      if (photoMode) {
+        const q = p * 4, lift = 1.12;
+        S.cs[k] = `rgb(${Math.min(255, d[q] * lift + 6) | 0},${Math.min(255, d[q + 1] * lift + 6) | 0},${Math.min(255, d[q + 2] * lift + 6) | 0})`;
+        S.size[k] = step * (0.62 + Math.random() * 0.12);
+      }
       key[k] = y + (Math.random() * 120 - 60) * K;
     }
     const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => key[a] - key[b]);
@@ -427,32 +458,57 @@ footer a { color: var(--sky); }
       else sparkle(ctx, x, y, c, sz * K);
     }
 
-    const glow = toneAmt() * Math.min(1, Math.max(0, (t - WAIT - 1) / (DRAW * 0.9)));
+    const glow = S.photoMode ? 0 : toneAmt() * Math.min(1, Math.max(0, (t - WAIT - 1) / (DRAW * 0.9)));
     if (glow > 0) { ctx.globalAlpha = glow; ctx.drawImage(S.tone, 0, 0); ctx.globalAlpha = 1; }
 
     for (const g of groups) g.length = 0;
     let newly = false;
-    actx.globalCompositeOperation = 'lighter';
+    actx.globalCompositeOperation = S.photoMode ? 'source-over' : 'lighter';
     for (let i = 0; i < S.n; i++) {
       if (S.landed[i]) continue;
       const p = (t - S.t0[i]) / S.dur[i];
       if (p <= 0) continue;
       if (p >= 1) {
         S.landed[i] = 1; S.landedList.push(i); newly = true;
+        if (S.photoMode) {
+          const h = S.size[i];
+          actx.fillStyle = S.cs[i];
+          actx.fillRect(S.tx[i] - h, S.ty[i] - h, h * 2, h * 2);
+          continue;
+        }
         const c = COLORS[S.col[i]];
         actx.fillStyle = rgb(c, 0.12);
         actx.beginPath(); actx.arc(S.tx[i], S.ty[i], S.size[i] * 2.6, 0, 6.2832); actx.fill();
         actx.fillStyle = rgb(c, 0.7);
         actx.beginPath(); actx.arc(S.tx[i], S.ty[i], S.size[i], 0, 6.2832); actx.fill();
-      } else groups[S.col[i]].push(i, p);
+      } else if (S.photoMode) groups[0].push(i, p);
+      else groups[S.col[i]].push(i, p);
     }
     actx.globalCompositeOperation = 'source-over';
-    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalCompositeOperation = S.photoMode ? 'source-over' : 'lighter';
     ctx.drawImage(art, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
 
+    if (S.photoMode) {
+      // the real photo resolves under the sparkles at the end
+      const r = Math.min(1, Math.max(0, (t - (WAIT + DRAW * 0.85)) / 2));
+      if (r > 0) { ctx.globalAlpha = r * r * (3 - 2 * r); ctx.drawImage(S.photoCv, 0, 0); ctx.globalAlpha = 1; }
+      const g = groups[0];
+      for (let k = 0; k < g.length; k += 2) {
+        const i = g[k], p = g[k + 1];
+        const e = 1 - Math.pow(1 - p, 3);
+        const bend = S.curve[i] * Math.sin(Math.PI * e);
+        const x = S.sx[i] + (S.tx[i] - S.sx[i]) * e + S.px[i] * bend;
+        const y = S.sy[i] + (S.ty[i] - S.sy[i]) * e + S.py[i] * bend;
+        const h = S.size[i] * (1.6 - 0.6 * e);
+        ctx.fillStyle = S.cs[i];
+        ctx.fillRect(x - h, y - h, h * 2, h * 2);
+        if (Math.random() < 0.004) sparkle(ctx, x, y, '#fff', (3 + Math.random() * 3) * K);
+      }
+    }
+
     const halo = 3 * K, core = 1.2 * K;
-    for (let c = 0; c < COLORS.length; c++) {
+    for (let c = 0; c < (S.photoMode ? 0 : COLORS.length); c++) {
       const g = groups[c];
       if (!g.length) continue;
       const xs = [], ys = [];
@@ -476,7 +532,7 @@ footer a { color: var(--sky); }
       const L = S.landedList;
       for (let k = 0; k < 20; k++) {
         const i = L[Math.floor(Math.random() * L.length)];
-        sparkle(ctx, S.tx[i], S.ty[i], COLOR_STR[S.col[i]], (2 + Math.random() * 3) * K);
+        sparkle(ctx, S.tx[i], S.ty[i], S.photoMode ? 'rgba(255,255,255,0.85)' : COLOR_STR[S.col[i]], (2 + Math.random() * 3) * K);
       }
     }
 
@@ -520,7 +576,7 @@ footer a { color: var(--sky); }
     return '';
   }
   function lockControls(on) {
-    ['photo', 'detail', 'play', 'record', 'fmt-feed', 'fmt-reel', 'fmt-square'].forEach(id => { $(id).disabled = on; });
+    ['photo', 'detail', 'tone', 'style-photo', 'style-lines', 'play', 'record', 'fmt-feed', 'fmt-reel', 'fmt-square'].forEach(id => { $(id).disabled = on; });
   }
   function record() {
     if (!window.MediaRecorder || !cv.captureStream) {
@@ -614,6 +670,8 @@ footer a { color: var(--sky); }
   });
   $('detail').addEventListener('input', showThr);
   $('tone').addEventListener('input', showTone);
+  const syncStyle = () => { $('lineFields').style.display = styleName() === 'lines' ? 'flex' : 'none'; };
+  document.querySelectorAll('input[name=style]').forEach(r => r.addEventListener('change', () => { syncStyle(); if (source) rebuild(); }));
   $('detail').addEventListener('change', () => { if (source) rebuild(); });
   $('quote').addEventListener('input', fitQuote);
   document.querySelectorAll('input[name=fmt]').forEach(r => r.addEventListener('change', () => {
@@ -627,6 +685,7 @@ footer a { color: var(--sky); }
   setFormat('feed');
   showThr();
   showTone();
+  syncStyle();
   source = makeDemo();
   rebuild();
   requestAnimationFrame(loop);
