@@ -1,0 +1,698 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sparkle Portrait</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column. The night-sky stage comes first, with a compact console of controls docked beneath it. */
+:root {
+  --night: #08050f;
+  --panel: #120d1c;
+  --line: #2b2339;
+  --ink: #efe6f5;
+  --muted: #a397b3;
+  --pink: #ffa5cd;
+  --lav: #cda5ff;
+  --sky: #91d2ff;
+  --display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { background: var(--night); color: var(--ink); }
+body {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 4px; }
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 2.5rem;
+  line-height: 1.05;
+  text-wrap: balance;
+  color: var(--ink);
+}
+h1 span { color: var(--pink); }
+.lede { margin: 0; color: var(--muted); max-width: 60ch; }
+
+.stage { display: flex; justify-content: center; position: relative; }
+canvas#stage {
+  display: block;
+  max-width: 100%;
+  max-height: 64vh;
+  width: auto;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--night);
+}
+.badge {
+  position: absolute; top: 10px; left: 10px;
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+  padding: 3px 8px; border-radius: 999px;
+}
+
+.console { display: flex; flex-direction: column; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.label output { font-variant-numeric: tabular-nums; letter-spacing: .04em; text-transform: none; }
+
+input[type=text] {
+  font: inherit; color: var(--ink); background: var(--night);
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; box-sizing: border-box;
+  font-family: var(--display); font-style: italic; font-size: 1.15rem;
+}
+input[type=range] { width: 100%; accent-color: var(--lav); }
+
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { text-align: center; padding: 8px 4px; cursor: pointer; color: var(--muted); font-size: 13px; line-height: 1.25; }
+.seg label small { display: block; font-size: 11px; opacity: .8; font-variant-numeric: tabular-nums; }
+.seg label + input + label { border-left: 1px solid var(--line); }
+.seg input:checked + label { background: var(--night); color: var(--ink); box-shadow: inset 0 -2px 0 var(--pink); }
+.seg input:focus-visible + label { outline: 2px solid var(--sky); outline-offset: -2px; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  font: inherit; font-weight: 600; cursor: pointer; border-radius: 999px; padding: 11px 18px;
+  border: 1px solid var(--line); background: transparent; color: var(--ink); flex: 1 1 auto; text-align: center;
+}
+.btn:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.btn.primary { background: var(--ink); color: var(--night); border-color: var(--ink); }
+.btn.rec::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--pink); margin-right: 8px; vertical-align: 1px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.file { position: relative; }
+.file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+
+.status { margin: 0; color: var(--muted); font-size: 13px; min-height: 1.5em; }
+.status.live { color: var(--pink); }
+.save { display: flex; flex-direction: column; gap: 6px; }
+.save p { margin: 0; font-size: 12px; color: var(--muted); }
+
+details { color: var(--muted); font-size: 14px; }
+summary { cursor: pointer; color: var(--ink); }
+details ol { padding-left: 1.2em; margin: 8px 0 0; display: flex; flex-direction: column; gap: 4px; }
+footer { font-size: 12px; color: var(--muted); }
+footer a { color: var(--sky); }
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Sparkle <span>Portrait</span></h1>
+    <p class="lede">Turn a photo into pastel sparkle line art that draws itself, then save it as a video for Reels.</p>
+  </header>
+
+  <div class="stage">
+    <canvas id="stage" width="1080" height="1350" aria-label="Sparkle animation"></canvas>
+    <span class="badge" id="badge">Demo</span>
+  </div>
+
+  <section class="console" aria-label="Controls">
+    <div class="row">
+      <label class="btn primary file" for="photo">Choose photo
+        <input type="file" id="photo" accept="image/*">
+      </label>
+    </div>
+
+    <div class="field">
+      <label class="label" for="quote">Quote</label>
+      <input type="text" id="quote" value="Light And Shadow, Both Mine." maxlength="60" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <span class="label">Format</span>
+      <div class="seg" role="radiogroup" aria-label="Format">
+        <input type="radio" name="fmt" id="fmt-feed" value="feed" checked><label for="fmt-feed">Feed<small>4:5 · 1080×1350</small></label>
+        <input type="radio" name="fmt" id="fmt-reel" value="reel"><label for="fmt-reel">Reel<small>9:16 · 1080×1920</small></label>
+        <input type="radio" name="fmt" id="fmt-square" value="square"><label for="fmt-square">Square<small>1:1 · 1080×1080</small></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">Style</span>
+      <div class="seg" role="radiogroup" aria-label="Style">
+        <input type="radio" name="style" id="style-photo" value="photo" checked><label for="style-photo">Photo<small>true colours</small></label>
+        <input type="radio" name="style" id="style-lines" value="lines"><label for="style-lines">Lines<small>pastel outline art</small></label>
+      </div>
+    </div>
+
+    <div id="lineFields" style="display:flex;flex-direction:column;gap:inherit">
+    <div class="field">
+      <label class="label" for="detail">Line detail <output id="thr">Level 5</output></label>
+      <input type="range" id="detail" min="1" max="10" step="1" value="6">
+    </div>
+
+    <div class="field">
+      <label class="label" for="tone">Photo glow <output id="toneOut">35%</output></label>
+      <input type="range" id="tone" min="0" max="100" step="5" value="35">
+    </div>
+    </div>
+
+    <div class="row">
+      <button class="btn" id="play" type="button">Replay</button>
+      <button class="btn rec" id="record" type="button">Record video</button>
+    </div>
+
+    <p class="status" id="status" role="status">Playing the demo. Choose a photo to make your own.</p>
+
+    <div class="save" id="saveBox" hidden>
+      <button class="btn primary" id="save" type="button">Save video</button>
+      <p>On iPhone, tap Save video, then Save Video again in the share sheet to put it in Photos.</p>
+    </div>
+  </section>
+
+  <details>
+    <summary>How it works</summary>
+    <ol>
+      <li>Your photo is cropped to fill the frame, contrast-balanced and lightly blurred.</li>
+      <li>Canny edge detection keeps the outlines, tuned to each photo. Line detail sets how many it keeps.</li>
+      <li>Each outline pixel gets a sparkle that flies in on a curve and settles, top to bottom.</li>
+      <li>A soft pastel glow of the photo fades in behind the lines, then the quote fades in and the finished piece twinkles. The whole video is 17.5 seconds.</li>
+    </ol>
+  </details>
+
+  <footer>Everything runs in your browser. Your photo never leaves your phone. Code on <a href="https://github.com/onyxog23-star/sparkal" target="_blank" rel="noopener">GitHub</a>.</footer>
+</div>
+
+<script>
+(() => {
+  const COLORS = [[255,165,205],[205,165,255],[145,210,255],[255,215,175],[255,190,225]];
+  const BG = [8,5,15];
+  const WAIT = 1.5, DRAW = 10, TEXT = 3, FINAL = 3, TOTAL = WAIT + DRAW + TEXT + FINAL;
+  const FORMATS = { feed: [1080,1350], reel: [1080,1920], square: [1080,1080] };
+
+  const cv = document.getElementById('stage');
+  const ctx = cv.getContext('2d');
+  const art = document.createElement('canvas');
+  const actx = art.getContext('2d');
+  const $ = id => document.getElementById(id);
+
+  let W, H, K, TA;
+  let source = null, isDemo = true, scene = null, startT = 0;
+  let recorder = null, videoFile = null, quoteFont = 34;
+
+  const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  const mix = (a, b, t) => [0,1,2].map(i => Math.round(a[i] + (b[i] - a[i]) * t));
+  const COLOR_STR = COLORS.map(c => rgb(c));
+  const HALO_STR = COLORS.map(c => rgb(mix(c, BG, 0.7)));
+
+  function status(msg, live = false) { const s = $('status'); s.textContent = msg; s.classList.toggle('live', live); }
+
+  function showThr() { $('thr').textContent = `Level ${$('detail').value}`; }
+  function styleName() { const r = document.querySelector('input[name=style]:checked'); return r ? r.value : 'photo'; }
+  function toneAmt() { return +$('tone').value / 100; }
+  function showTone() { $('toneOut').textContent = `${$('tone').value}%`; }
+
+  function setFormat(name) {
+    [W, H] = FORMATS[name];
+    cv.width = art.width = W;
+    cv.height = art.height = H;
+    K = W / 700;
+    TA = 120 * K;
+  }
+
+  // ---------- Canny edge detection (same steps as OpenCV) ----------
+  function canny(g, w, h, detail) {
+    const n = w * h;
+    const b = blur(blur(g, w, h), w, h);
+    const mag = new Float32Array(n), dir = new Uint8Array(n);
+    let maxM = 1;
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const i = y * w + x;
+        const tl = b[i - w - 1], tc = b[i - w], tr = b[i - w + 1];
+        const ml = b[i - 1], mr = b[i + 1];
+        const bl = b[i + w - 1], bc = b[i + w], br = b[i + w + 1];
+        const gx = (tr + 2 * mr + br) - (tl + 2 * ml + bl);
+        const gy = (bl + 2 * bc + br) - (tl + 2 * tc + tr);
+        const m = Math.hypot(gx, gy);
+        mag[i] = m; if (m > maxM) maxM = m;
+        let a = Math.atan2(gy, gx) * 180 / Math.PI;
+        if (a < 0) a += 180;
+        dir[i] = a < 22.5 || a >= 157.5 ? 0 : a < 67.5 ? 1 : a < 112.5 ? 2 : 3;
+      }
+    }
+    // thresholds adapt to the photo: keep the strongest share of gradients
+    const BINS = 1024, hist = new Uint32Array(BINS);
+    for (let i = 0; i < n; i++) hist[Math.min(BINS - 1, (mag[i] / maxM * (BINS - 1)) | 0)]++;
+    const want = n * (0.955 - detail * 0.022);
+    let acc = 0, bin = 0;
+    while (bin < BINS - 1 && acc + hist[bin] < want) acc += hist[bin++];
+    const high = Math.max(12, bin / (BINS - 1) * maxM), low = high * 0.42;
+    return { edges: suppress(mag, dir, w, h, low, high), mag, high };
+  }
+
+  function blur(g, w, h) {
+    const n = w * h, tmp = new Float32Array(n), b = new Float32Array(n);
+    for (let y = 0; y < h; y++) {
+      const r = y * w;
+      for (let x = 0; x < w; x++) {
+        const xl = x > 0 ? x - 1 : 0, xr = x < w - 1 ? x + 1 : w - 1;
+        tmp[r + x] = (g[r + xl] + 2 * g[r + x] + g[r + xr]) / 4;
+      }
+    }
+    for (let y = 0; y < h; y++) {
+      const yu = y > 0 ? y - 1 : 0, yd = y < h - 1 ? y + 1 : h - 1;
+      for (let x = 0; x < w; x++) b[y * w + x] = (tmp[yu * w + x] + 2 * tmp[y * w + x] + tmp[yd * w + x]) / 4;
+    }
+    return b;
+  }
+
+  function suppress(mag, dir, w, h, low, high) {
+    const n = w * h;
+    const nms = new Float32Array(n);
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const i = y * w + x, m = mag[i];
+        if (m < low) continue;
+        let p, q;
+        switch (dir[i]) {
+          case 0: p = mag[i - 1]; q = mag[i + 1]; break;
+          case 1: p = mag[i - w - 1]; q = mag[i + w + 1]; break;
+          case 2: p = mag[i - w]; q = mag[i + w]; break;
+          default: p = mag[i - w + 1]; q = mag[i + w - 1];
+        }
+        if (m >= p && m > q) nms[i] = m;
+      }
+    }
+    const e = new Uint8Array(n), stack = [];
+    for (let i = 0; i < n; i++) if (nms[i] > high) { e[i] = 1; stack.push(i); }
+    const nb = [-w - 1, -w, -w + 1, -1, 1, w - 1, w, w + 1];
+    while (stack.length) {
+      const i = stack.pop();
+      for (const o of nb) { const j = i + o; if (j >= 0 && j < n && !e[j] && nms[j] >= low) { e[j] = 1; stack.push(j); } }
+    }
+    return e;
+  }
+
+  // ---------- build the animation from the current photo ----------
+  function buildScene() {
+    const iw = source.naturalWidth || source.width, ih = source.naturalHeight || source.height;
+    const nw = Math.round(W - 60 * K), nh = Math.round(H - TA - 30 * K);
+    let cw, ch, cx, cy;
+    if (isDemo) {                                  // demo: fit whole picture
+      const s = Math.min(nw / iw, nh / ih); cw = nw / s; ch = nh / s; cx = (iw - cw) / 2; cy = (ih - ch) / 2;
+    } else {                                       // photos: crop to fill the frame, keep the upper part (faces)
+      const s = Math.max(nw / iw, nh / ih); cw = nw / s; ch = nh / s; cx = (iw - cw) / 2; cy = (ih - ch) * 0.3;
+    }
+    const off = document.createElement('canvas');
+    off.width = nw; off.height = nh;
+    const o = off.getContext('2d', { willReadFrequently: true });
+    o.fillStyle = '#fff'; o.fillRect(0, 0, nw, nh);
+    o.drawImage(source, cx, cy, cw, ch, 0, 0, nw, nh);
+    const d = o.getImageData(0, 0, nw, nh).data;
+    const N = nw * nh, g = new Float32Array(N);
+    const hist = new Uint32Array(256);
+    for (let i = 0, j = 0; i < N; i++, j += 4) { const v = 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2]; g[i] = v; hist[v | 0]++; }
+    // stretch contrast between the 1st and 99th percentile so dim photos still give clear lines
+    let lo = 0, hi = 255, acc = 0;
+    while (lo < 254 && (acc += hist[lo]) < N * 0.01) lo++;
+    acc = 0; while (hi > lo + 1 && (acc += hist[hi]) < N * 0.01) hi--;
+    const span = Math.max(1, hi - lo);
+    for (let i = 0; i < N; i++) g[i] = Math.min(255, Math.max(0, (g[i] - lo) / span * 255));
+
+    const ox = Math.floor((W - nw) / 2), oy = Math.floor((H - TA - nh) / 2 + 10 * K);
+
+    const photoMode = styleName() === 'photo' && !isDemo;
+    const res = canny(g, nw, nh, +$('detail').value), edges = res.edges;
+    // soft pastel glow of the photo, shown faintly behind the lines
+    const tone = document.createElement('canvas');
+    tone.width = W; tone.height = H;
+    const tc = tone.getContext('2d');
+    const td = tc.createImageData(nw, nh), tp = td.data;
+    const A = COLORS[0], B = COLORS[1], C = COLORS[2];
+    // glow follows detail (where the photo has structure), not raw brightness, so flat backgrounds stay dark
+    let dm = new Float32Array(N);
+    for (let i = 0; i < N; i++) dm[i] = Math.min(1, res.mag[i] / (res.high * 1.3));
+    for (let r = 0; r < 5; r++) dm = blur(dm, nw, nh);
+    for (let y = 0; y < nh; y++) {
+      const fy = y / nh, tint = fy < 0.5 ? mix(A, B, fy * 2) : mix(B, C, (fy - 0.5) * 2);
+      for (let x = 0; x < nw; x++) {
+        const i = y * nw + x, v = Math.min(1, Math.pow(dm[i], 0.75) * 1.4);
+        const ex = Math.min(x, nw - 1 - x, y, nh - 1 - y) / (40 * K);   // feather the frame edges
+        const f = v * Math.min(1, ex), k = i * 4;
+        tp[k] = BG[0] + (tint[0] - BG[0]) * f;
+        tp[k + 1] = BG[1] + (tint[1] - BG[1]) * f;
+        tp[k + 2] = BG[2] + (tint[2] - BG[2]) * f;
+        tp[k + 3] = 255 * Math.min(1, ex);
+      }
+    }
+    tc.putImageData(td, ox, oy);
+
+
+    const pts = [], m = 3;
+    let step = 1;
+    if (photoMode) {
+      // every part of the photo becomes a sparkle in its real colour
+      step = Math.max(2, Math.sqrt(nw * nh / 42000));
+      for (let y = 0; y < nh; y += step) for (let x = 0; x < nw; x += step) {
+        const xx = Math.min(nw - 1, Math.round(x + Math.random() * step * 0.5));
+        const yy = Math.min(nh - 1, Math.round(y + Math.random() * step * 0.5));
+        pts.push(yy * nw + xx);
+      }
+    } else {
+      for (let y = m; y < nh - m; y++) for (let x = m; x < nw - m; x++) { const i = y * nw + x; if (edges[i]) pts.push(i); }
+    }
+
+    const max = photoMode ? pts.length : Math.min(26000, Math.round(16000 * K));
+    for (let i = 0; i < Math.min(max, pts.length); i++) {      // partial shuffle = random sample
+      const j = i + Math.floor(Math.random() * (pts.length - i));
+      [pts[i], pts[j]] = [pts[j], pts[i]];
+    }
+    const n = Math.min(max, pts.length);
+    const photoCv = document.createElement('canvas');
+    photoCv.width = W; photoCv.height = H;
+    photoCv.getContext('2d').drawImage(off, ox, oy);
+    const S = {
+      tone, photoMode, photoCv, cs: photoMode ? new Array(n) : null,
+      n, tx: new Float32Array(n), ty: new Float32Array(n), sx: new Float32Array(n), sy: new Float32Array(n),
+      px: new Float32Array(n), py: new Float32Array(n), curve: new Float32Array(n),
+      t0: new Float32Array(n), dur: new Float32Array(n), col: new Uint8Array(n), size: new Float32Array(n),
+      landed: new Uint8Array(n), landedList: [], stars: []
+    };
+    const key = new Float32Array(n);
+    for (let k = 0; k < n; k++) {
+      const p = pts[k];
+      const x = ox + (p % nw), y = oy + Math.floor(p / nw);
+      S.tx[k] = x; S.ty[k] = y;
+      const ang = Math.random() * Math.PI * 2, dist = (120 + Math.random() * 260) * K;
+      S.sx[k] = x + Math.cos(ang) * dist; S.sy[k] = y + Math.sin(ang) * dist;
+      const dx = x - S.sx[k], dy = y - S.sy[k], len = Math.hypot(dx, dy) || 1;
+      S.px[k] = -dy / len; S.py[k] = dx / len;
+      S.curve[k] = (Math.random() * 120 - 60) * K;
+      S.dur[k] = 0.8 + Math.random() * 0.8;
+      S.col[k] = Math.floor(Math.random() * COLORS.length);
+      S.size[k] = (Math.random() < 0.7 ? 0.7 : 1.1) * K;
+      if (photoMode) {
+        const q = p * 4, lift = 1.12;
+        S.cs[k] = `rgb(${Math.min(255, d[q] * lift + 6) | 0},${Math.min(255, d[q + 1] * lift + 6) | 0},${Math.min(255, d[q + 2] * lift + 6) | 0})`;
+        S.size[k] = step * (0.62 + Math.random() * 0.12);
+      }
+      key[k] = y + (Math.random() * 120 - 60) * K;
+    }
+    const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => key[a] - key[b]);
+    order.forEach((idx, rank) => { S.t0[idx] = WAIT + rank / n * DRAW * 0.8; });
+
+    const starCount = Math.min(420, Math.round(140 * W * H / 560000));
+    for (let i = 0; i < starCount; i++) {
+      S.stars.push([Math.random() * W, Math.random() * H, Math.random() * Math.PI * 2, 1 + Math.random() * 2,
+        [1,1,1,2,3][Math.floor(Math.random() * 5)]]);
+    }
+    scene = S;
+    fitQuote();
+    return n;
+  }
+
+  function fitQuote() {
+    const q = $('quote').value.trim();
+    quoteFont = 34 * K;
+    ctx.font = `italic ${quoteFont}px Georgia, 'Times New Roman', serif`;
+    while (quoteFont > 14 && ctx.measureText(q).width > W - 80 * K) {
+      quoteFont -= 1;
+      ctx.font = `italic ${quoteFont}px Georgia, 'Times New Roman', serif`;
+    }
+  }
+
+  function sparkle(c, x, y, color, size) {
+    c.lineWidth = Math.max(1, K * 0.9);
+    c.strokeStyle = color;
+    c.beginPath();
+    c.moveTo(x - size, y); c.lineTo(x + size, y);
+    c.moveTo(x, y - size); c.lineTo(x, y + size);
+    c.stroke();
+    const d = Math.max(1, size / 2);
+    c.globalAlpha = 0.5;
+    c.beginPath();
+    c.moveTo(x - d, y - d); c.lineTo(x + d, y + d);
+    c.moveTo(x - d, y + d); c.lineTo(x + d, y - d);
+    c.stroke();
+    c.globalAlpha = 1;
+  }
+
+  // ---------- one frame ----------
+  const groups = COLORS.map(() => []);
+  function draw(t) {
+    const S = scene;
+    ctx.fillStyle = rgb(BG);
+    ctx.fillRect(0, 0, W, H);
+
+    for (const [x, y, ph, sp, sz] of S.stars) {
+      const b = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(t * sp + ph));
+      const c = rgb(mix(BG, [210,210,240], b));
+      if (sz === 1) { ctx.fillStyle = c; ctx.fillRect(x, y, K, K); }
+      else sparkle(ctx, x, y, c, sz * K);
+    }
+
+    const glow = S.photoMode ? 0 : toneAmt() * Math.min(1, Math.max(0, (t - WAIT - 1) / (DRAW * 0.9)));
+    if (glow > 0) { ctx.globalAlpha = glow; ctx.drawImage(S.tone, 0, 0); ctx.globalAlpha = 1; }
+
+    for (const g of groups) g.length = 0;
+    let newly = false;
+    actx.globalCompositeOperation = S.photoMode ? 'source-over' : 'lighter';
+    for (let i = 0; i < S.n; i++) {
+      if (S.landed[i]) continue;
+      const p = (t - S.t0[i]) / S.dur[i];
+      if (p <= 0) continue;
+      if (p >= 1) {
+        S.landed[i] = 1; S.landedList.push(i); newly = true;
+        if (S.photoMode) {
+          const h = S.size[i];
+          actx.fillStyle = S.cs[i];
+          actx.fillRect(S.tx[i] - h, S.ty[i] - h, h * 2, h * 2);
+          continue;
+        }
+        const c = COLORS[S.col[i]];
+        actx.fillStyle = rgb(c, 0.12);
+        actx.beginPath(); actx.arc(S.tx[i], S.ty[i], S.size[i] * 2.6, 0, 6.2832); actx.fill();
+        actx.fillStyle = rgb(c, 0.7);
+        actx.beginPath(); actx.arc(S.tx[i], S.ty[i], S.size[i], 0, 6.2832); actx.fill();
+      } else if (S.photoMode) groups[0].push(i, p);
+      else groups[S.col[i]].push(i, p);
+    }
+    actx.globalCompositeOperation = 'source-over';
+    ctx.globalCompositeOperation = S.photoMode ? 'source-over' : 'lighter';
+    ctx.drawImage(art, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+
+    if (S.photoMode) {
+      // the real photo resolves under the sparkles at the end
+      const r = Math.min(1, Math.max(0, (t - (WAIT + DRAW * 0.85)) / 2));
+      if (r > 0) { ctx.globalAlpha = r * r * (3 - 2 * r); ctx.drawImage(S.photoCv, 0, 0); ctx.globalAlpha = 1; }
+      const g = groups[0];
+      for (let k = 0; k < g.length; k += 2) {
+        const i = g[k], p = g[k + 1];
+        const e = 1 - Math.pow(1 - p, 3);
+        const bend = S.curve[i] * Math.sin(Math.PI * e);
+        const x = S.sx[i] + (S.tx[i] - S.sx[i]) * e + S.px[i] * bend;
+        const y = S.sy[i] + (S.ty[i] - S.sy[i]) * e + S.py[i] * bend;
+        const h = S.size[i] * (1.6 - 0.6 * e);
+        ctx.fillStyle = S.cs[i];
+        ctx.fillRect(x - h, y - h, h * 2, h * 2);
+        if (Math.random() < 0.004) sparkle(ctx, x, y, '#fff', (3 + Math.random() * 3) * K);
+      }
+    }
+
+    const halo = 3 * K, core = 1.2 * K;
+    for (let c = 0; c < (S.photoMode ? 0 : COLORS.length); c++) {
+      const g = groups[c];
+      if (!g.length) continue;
+      const xs = [], ys = [];
+      for (let k = 0; k < g.length; k += 2) {
+        const i = g[k], p = g[k + 1];
+        const e = 1 - Math.pow(1 - p, 3);
+        const bend = S.curve[i] * Math.sin(Math.PI * e);
+        xs.push(S.sx[i] + (S.tx[i] - S.sx[i]) * e + S.px[i] * bend);
+        ys.push(S.sy[i] + (S.ty[i] - S.sy[i]) * e + S.py[i] * bend);
+      }
+      ctx.fillStyle = HALO_STR[c]; ctx.beginPath();
+      for (let k = 0; k < xs.length; k++) { ctx.moveTo(xs[k] + halo, ys[k]); ctx.arc(xs[k], ys[k], halo, 0, 6.2832); }
+      ctx.fill();
+      ctx.fillStyle = COLOR_STR[c]; ctx.beginPath();
+      for (let k = 0; k < xs.length; k++) { ctx.moveTo(xs[k] + core, ys[k]); ctx.arc(xs[k], ys[k], core, 0, 6.2832); }
+      ctx.fill();
+      for (let k = 0; k < xs.length; k++) if (Math.random() < 0.02) sparkle(ctx, xs[k], ys[k], COLOR_STR[c], (3 + Math.random() * 3) * K);
+    }
+
+    if (t > WAIT + DRAW && S.landedList.length) {
+      const L = S.landedList;
+      for (let k = 0; k < 20; k++) {
+        const i = L[Math.floor(Math.random() * L.length)];
+        sparkle(ctx, S.tx[i], S.ty[i], S.photoMode ? 'rgba(255,255,255,0.85)' : COLOR_STR[S.col[i]], (2 + Math.random() * 3) * K);
+      }
+    }
+
+    const f = (t - (WAIT + DRAW)) / TEXT;
+    if (f > 0) {
+      ctx.font = `italic ${quoteFont}px Georgia, 'Times New Roman', serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = rgb([240,225,245], Math.min(1, f));
+      ctx.fillText($('quote').value.trim(), W / 2, H - TA / 2 - 10 * K);
+    }
+  }
+
+  function restart() {
+    if (!scene) return;
+    actx.clearRect(0, 0, W, H);
+    scene.landed.fill(0);
+    scene.landedList.length = 0;
+    startT = performance.now();
+  }
+
+  function rebuild() {
+    const n = buildScene();
+    restart();
+    if (!n) status('No outlines found in this photo. Move Line detail to the right.');
+    return n;
+  }
+
+  function loop(now) {
+    if (scene) {
+      const t = (now - startT) / 1000;
+      draw(t);
+      if (recorder && recorder.state === 'recording' && t >= TOTAL + 0.2) recorder.stop();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- recording ----------
+  function pickMime() {
+    const list = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+    for (const m of list) if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) return m;
+    return '';
+  }
+  function lockControls(on) {
+    ['photo', 'detail', 'tone', 'style-photo', 'style-lines', 'play', 'record', 'fmt-feed', 'fmt-reel', 'fmt-square'].forEach(id => { $(id).disabled = on; });
+  }
+  function record() {
+    if (!window.MediaRecorder || !cv.captureStream) {
+      status("This browser can't record video. Try Safari or Chrome.");
+      return;
+    }
+    const mime = pickMime();
+    const stream = cv.captureStream(60);
+    const chunks = [];
+    try {
+      recorder = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 8000000 } : {});
+    } catch (e) {
+      status("Recording couldn't start in this browser. Try Safari or Chrome.");
+      return;
+    }
+    $('saveBox').hidden = true;
+    recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    recorder.onstop = () => {
+      const type = recorder.mimeType || mime || 'video/webm';
+      const ext = type.includes('mp4') ? 'mp4' : 'webm';
+      videoFile = new File([new Blob(chunks, { type })], `sparkle-portrait.${ext}`, { type });
+      recorder = null;
+      lockControls(false);
+      $('saveBox').hidden = false;
+      status(`Video ready (${(videoFile.size / 1048576).toFixed(1)} MB, ${ext.toUpperCase()}).`);
+    };
+    lockControls(true);
+    restart();
+    recorder.start(250);
+    status(`Recording… ${TOTAL} seconds. Keep this tab open.`, true);
+  }
+  async function save() {
+    if (!videoFile) return;
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [videoFile] })) {
+        await navigator.share({ files: [videoFile], title: 'Sparkle Portrait' });
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(videoFile);
+    a.download = videoFile.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    status('Download started. If nothing happened, open this tool on its GitHub Pages site and try again.');
+  }
+
+  // ---------- demo picture (shown before a photo is chosen) ----------
+  function makeDemo() {
+    const c = document.createElement('canvas');
+    c.width = 600; c.height = 720;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, 600, 720);
+    g.fillStyle = '#111';
+    g.beginPath(); g.arc(290, 300, 200, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath(); g.arc(370, 250, 180, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#111';
+    const star = (cx, cy, r) => {
+      g.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.42 : r;
+        g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+      }
+      g.closePath(); g.fill();
+    };
+    star(470, 150, 34); star(520, 330, 20); star(430, 440, 26);
+    g.font = 'italic 600 70px Georgia, serif';
+    g.textAlign = 'center';
+    g.fillText('dream softly', 300, 650);
+    return c;
+  }
+
+  // ---------- wiring ----------
+  $('photo').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const img = new Image();
+    img.onload = () => {
+      source = img; isDemo = false;
+      $('badge').hidden = true;
+      $('saveBox').hidden = true;
+      const n = rebuild();
+      if (n) status(`Drawing ${n.toLocaleString()} sparkles. Tap Record video when you like it.`);
+    };
+    img.onerror = () => status("Couldn't open that file. Try a JPG or PNG photo.");
+    img.src = URL.createObjectURL(f);
+  });
+  $('detail').addEventListener('input', showThr);
+  $('tone').addEventListener('input', showTone);
+  const syncStyle = () => { $('lineFields').style.display = styleName() === 'lines' ? 'flex' : 'none'; };
+  document.querySelectorAll('input[name=style]').forEach(r => r.addEventListener('change', () => { syncStyle(); if (source) rebuild(); }));
+  $('detail').addEventListener('change', () => { if (source) rebuild(); });
+  $('quote').addEventListener('input', fitQuote);
+  document.querySelectorAll('input[name=fmt]').forEach(r => r.addEventListener('change', () => {
+    setFormat(r.value);
+    if (source) rebuild();
+  }));
+  $('play').addEventListener('click', restart);
+  $('record').addEventListener('click', record);
+  $('save').addEventListener('click', save);
+
+  setFormat('feed');
+  showThr();
+  showTone();
+  syncStyle();
+  source = makeDemo();
+  rebuild();
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</html>
+
+</body></html>
